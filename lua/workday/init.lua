@@ -101,8 +101,11 @@ local function move_to_backlog_top(backlog_buf)
 
   vim.api.nvim_buf_set_lines(cur_buf, row, row + 1, false, {})
 
+  -- Strip the checkbox prefix when moving to backlog
+  local stripped_line = strip_prefix(line)
+  
   local backlog_lines = vim.api.nvim_buf_get_lines(backlog_buf, 0, -1, false)
-  table.insert(backlog_lines, 1, line)
+  table.insert(backlog_lines, 1, stripped_line)
   vim.api.nvim_buf_set_lines(backlog_buf, 0, -1, false, backlog_lines)
 end
 
@@ -120,13 +123,12 @@ local function move_to_todo_bottom(backlog_buf, todo_buf)
 
   vim.api.nvim_buf_set_lines(cur_buf, row, row + 1, false, {})
 
-  if not line:match("^%- %[[ xX]?%] ") then
-    line = "- [ ] " .. line
-  end
+  -- Always add the checkbox prefix when moving to todo
+  local prefixed_line = add_prefix(line)
 
   local todo_line_count = vim.api.nvim_buf_line_count(todo_buf)
 
-  vim.api.nvim_buf_set_lines(todo_buf, todo_line_count, todo_line_count, false, {line})
+  vim.api.nvim_buf_set_lines(todo_buf, todo_line_count, todo_line_count, false, {prefixed_line})
 
   vim.api.nvim_echo({{"Moved task to todo list", "Normal"}}, true, {})
 end

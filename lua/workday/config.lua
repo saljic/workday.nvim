@@ -6,7 +6,7 @@ local config = {
     move_to_todo_bottom = "<leader>td",
   },
   persistence = {
-    enabled = false,
+    enabled = true,
     todo_file_path = vim.fn.stdpath('data') .. "/workday_todo.txt",
     backlog_file_path = vim.fn.stdpath('data') .. "/workday_backlog.txt",
     archive_file_path = vim.fn.stdpath('data') .. "/workday_archive.txt",

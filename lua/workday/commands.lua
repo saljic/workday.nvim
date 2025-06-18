@@ -1,9 +1,19 @@
 local config = require("workday.config").config
-local ui = require("workday.ui")
 local tasks = require("workday.tasks")
+local line_utils = require("workday.line_utils")
 local persistence = require("workday.persistence")
 
 local M = {}
+
+local process_lines = function(buffer)
+  local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
+  for i, line in ipairs(lines) do
+    if i > 1 and line ~= "" and not line:match("^%- %[[ xX]?%] ") then
+      lines[i] = "- [ ] " .. line
+    end
+  end
+  vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
+end
 
 function M.setup_commands(view_buffers)
   -- Setup key mappings for the todo buffer.
@@ -47,12 +57,14 @@ function M.setup_commands(view_buffers)
     buffer = view_buffers.todo_buf,
     callback = function()
       local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-      if row < 1 then return end
-      local line = vim.api.nvim_buf_get_lines(view_buffers.todo_buf, row, row+1, false)[1]
+      if row < 1 then
+        return
+      end
+      local line = vim.api.nvim_buf_get_lines(view_buffers.todo_buf, row, row + 1, false)[1]
       if line then
-        local stripped_line = line:gsub("^%- %[[ xX]?%] ", "")
+        local stripped_line = line_utils.strip_prefix(line)
         if stripped_line ~= line then
-          vim.api.nvim_buf_set_lines(view_buffers.todo_buf, row, row+1, false, {stripped_line})
+          vim.api.nvim_buf_set_lines(view_buffers.todo_buf, row, row + 1, false, { stripped_line })
         end
       end
     end,
@@ -61,19 +73,46 @@ function M.setup_commands(view_buffers)
   vim.api.nvim_create_autocmd("InsertLeave", {
     buffer = view_buffers.todo_buf,
     callback = function()
-      local lines = vim.api.nvim_buf_get_lines(view_buffers.todo_buf, 0, -1, false)
-      for i, line in ipairs(lines) do
-        if i > 1 and line ~= "" and not line:match("^%- %[[ xX]?%] ") then
-          lines[i] = "- [ ] " .. line
-        end
-      end
-      vim.api.nvim_buf_set_lines(view_buffers.todo_buf, 0, -1, false, lines)
+      process_lines(view_buffers.todo_buf)
+      persistence.save_workday(view_buffers)
     end,
   })
 
-  -- Create user commands for added convenience.
-  vim.api.nvim_create_user_command('WorkdayArchive', tasks.archive_completed_tasks, { nargs = 0 })
-  vim.api.nvim_create_user_command('WorkdaySave', function() persistence.save_workday(view_buffers) end, { nargs = 0 })
+  vim.api.nvim_create_autocmd("InsertLeave", {
+    buffer = view_buffers.archive_buf,
+    callback = function()
+      persistence.save_workday(view_buffers)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("InsertLeave", {
+    buffer = view_buffers.backlog_buf,
+    callback = function()
+      persistence.save_workday(view_buffers)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("TextChanged", {
+    buffer = view_buffers.todo_buf,
+    callback = function()
+      process_lines(view_buffers.todo_buf)
+      persistence.save_workday(view_buffers)
+    end,
+  })
+  
+  vim.api.nvim_create_autocmd("TextChanged", {
+    buffer = view_buffers.archive_buf,
+    callback = function()
+      persistence.save_workday(view_buffers)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("TextChanged", {
+    buffer = view_buffers.backlog_buf,
+    callback = function()
+      persistence.save_workday(view_buffers)
+    end,
+  })
 end
 
 return M

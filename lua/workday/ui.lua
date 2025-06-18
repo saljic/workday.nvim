@@ -65,10 +65,10 @@ function M.setup_layout()
   local backlog_buf = M.create_scratch_buffer('backlog', backlog_width)
   local archive_buf = M.create_scratch_buffer('archive', archive_width)
 
-  if config.persist then
-    M.load_or_create_buffer(todo_buf, config.todo_file, "todo", todo_width)
-    M.load_or_create_buffer(backlog_buf, config.backlog_file, "backlog", backlog_width)
-    M.load_or_create_buffer(archive_buf, config.archive_file, "archive", archive_width)
+  if config.persistence.enabled then
+    M.load_or_create_buffer(todo_buf, config.persistence.todo_file_path, "todo", todo_width)
+    M.load_or_create_buffer(backlog_buf, config.persistence.backlog_file_path, "backlog", backlog_width)
+    M.load_or_create_buffer(archive_buf, config.persistence.archive_file_path, "archive", archive_width)
   end
 
   -- Set up the windows with the corresponding buffers

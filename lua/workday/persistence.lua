@@ -8,7 +8,7 @@ local function save_buffer_to_file(buf, file_path)
 end
 
 function M.save_workday(view_buffers)
-  if not config.persist then
+  if not config.persistence.enabled then
     vim.notify("Persistence is disabled.", vim.log.levels.INFO)
     return
   end
@@ -16,10 +16,9 @@ function M.save_workday(view_buffers)
     vim.notify("No workday view open.", vim.log.levels.ERROR)
     return
   end
-  save_buffer_to_file(view_buffers.todo_buf, config.todo_file)
-  save_buffer_to_file(view_buffers.backlog_buf, config.backlog_file)
-  save_buffer_to_file(view_buffers.archive_buf, config.archive_file)
-  vim.notify("Workday saved.")
+  save_buffer_to_file(view_buffers.todo_buf, config.persistence.todo_file_path)
+  save_buffer_to_file(view_buffers.backlog_buf, config.persistence.backlog_file_path)
+  save_buffer_to_file(view_buffers.archive_buf, config.persistence.archive_file_path)
 end
 
 return M

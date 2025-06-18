@@ -1,22 +1,6 @@
+local line_utils = require("workday.line_utils")
+
 local M = {}
-
--- Helper functions for task line manipulation
-local function strip_prefix(line)
-  return line:gsub("^%- %[[ xX]?%] ", "")
-end
-
-local function toggle_completed(line)
-  if line:match("^%- %[%s%]") then
-    return line:gsub("^%- %[%s%]", "- [x]", 1)
-  elseif line:match("^%- %[x%]") or line:match("^%- %[X%]") then
-    return line:gsub("^%- %[[xX]%]", "- [ ]", 1)
-  end
-  return line
-end
-
-local function add_prefix(line)
-  return "- [ ] " .. line
-end
 
 -- Toggle the checkbox state of a task in the current buffer.
 function M.toggle_todo()
@@ -28,7 +12,7 @@ function M.toggle_todo()
   local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
   if not line then return end
 
-  local toggled = toggle_completed(line)
+  local toggled = line_utils.toggle_completed(line)
   vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { toggled })
 end
 
@@ -43,7 +27,7 @@ function M.move_to_backlog_top(backlog_buf)
   if not line or line == "" then return end
 
   vim.api.nvim_buf_set_lines(cur_buf, row, row + 1, false, {})
-  local stripped_line = strip_prefix(line)
+  local stripped_line = line_utils.strip_prefix(line)
 
   local backlog_lines = vim.api.nvim_buf_get_lines(backlog_buf, 0, -1, false)
   if #backlog_lines == 1 then
@@ -70,7 +54,7 @@ function M.move_to_todo_bottom(from_buf, todo_buf)
   if not line or line == "" then return end
 
   vim.api.nvim_buf_set_lines(cur_buf, row, row + 1, false, {})
-  local prefixed_line = add_prefix(line)
+  local prefixed_line = line_utils.add_prefix(line)
   local todo_line_count = vim.api.nvim_buf_line_count(todo_buf)
   vim.api.nvim_buf_set_lines(todo_buf, todo_line_count, todo_line_count, false, { prefixed_line })
 end
@@ -91,7 +75,7 @@ function M.archive_completed_tasks()
   for i = todo_line_count, 2, -1 do  -- iterate from bottom to top (skip header)
     local line = vim.api.nvim_buf_get_lines(todo_buf, i-1, i, false)[1]
     if line and line:match("^%- %[[xX]%] ") then
-      local stripped_line = strip_prefix(line)
+      local stripped_line = line_utils.strip_prefix(line)
       archived_count = archived_count + 1
       vim.api.nvim_buf_set_lines(todo_buf, i-1, i, false, {})
       vim.api.nvim_buf_set_lines(archive_buf, -1, -1, false, { stripped_line })

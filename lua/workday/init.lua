@@ -12,12 +12,11 @@ end
 
 function M.open_workday_view()
   local view_buffers = ui.setup_layout()
-  M.view_buffers = view_buffers  -- store globally so that other modules can access them
+  M.view_buffers = view_buffers
   commands_mod.setup_commands(view_buffers)
 end
 
--- Create the main Workday user command.
-vim.api.nvim_create_user_command('Workday', function()
+vim.api.nvim_create_user_command("Workday", function()
   M.open_workday_view()
 end, { nargs = 0 })
 

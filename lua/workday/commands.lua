@@ -15,18 +15,40 @@ local process_lines = function(buffer)
   vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
 end
 
+local quit = function(view_buffers)
+  if not view_buffers then
+    vim.notify("Workday view is not open", vim.log.levels.ERROR)
+    return
+  end
+
+  persistence.save_workday(view_buffers)
+
+  if vim.api.nvim_buf_is_valid(view_buffers.todo_buf) then
+    vim.api.nvim_buf_delete(view_buffers.todo_buf, { force = true })
+  end
+  if vim.api.nvim_buf_is_valid(view_buffers.backlog_buf) then
+    vim.api.nvim_buf_delete(view_buffers.backlog_buf, { force = true })
+  end
+  if vim.api.nvim_buf_is_valid(view_buffers.archive_buf) then
+    vim.api.nvim_buf_delete(view_buffers.archive_buf, { force = true })
+  end
+end
+
 function M.setup_commands(view_buffers)
   -- Setup key mappings for the todo buffer.
   local todo_opts = { noremap = true, silent = true, buffer = view_buffers.todo_buf }
   vim.keymap.set('n', config.keymap.toggle_todo, tasks.toggle_todo, todo_opts)
+  vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, todo_opts)
   vim.keymap.set('n', config.keymap.move_to_backlog_top, function() tasks.move_to_backlog_top(view_buffers.backlog_buf) end, todo_opts)
   vim.keymap.set('n', config.keymap.archive_completed_tasks, tasks.archive_completed_tasks, todo_opts)
 
   local backlog_opts = { noremap = true, silent = true, buffer = view_buffers.backlog_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.backlog_buf, view_buffers.todo_buf) end, backlog_opts)
+  vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, backlog_opts)
 
   local archive_opts = { noremap = true, silent = true, buffer = view_buffers.archive_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.archive_buf, view_buffers.todo_buf) end, archive_opts)
+  vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, archive_opts)
 
   -- Prevent moving the cursor into header lines.
   local header_prevent_buffers = {

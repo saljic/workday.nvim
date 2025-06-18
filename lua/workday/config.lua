@@ -1,9 +1,11 @@
 local config = {
   keymap = {
-    toggle_todo = "<leader>tt",
-    move_to_backlog_top = "<leader>tb",
-    archive_completed_tasks = "<leader>ta",
-    move_to_todo_bottom = "<leader>td",
+    toggle_todo = "<leader>tt", -- Toggle todo
+    move_to_backlog_top = "<leader>tb", -- Move todo to backlog top
+    archive_completed_tasks = "<leader>ta", -- Archive completed tasks
+    move_to_todo_bottom = "<leader>td", -- Move backlog/archive to todo bottom
+    quit = "q", -- Quit workday view
+    start = "<leader>ow", -- Open workday view
   },
   persistence = {
     enabled = true,

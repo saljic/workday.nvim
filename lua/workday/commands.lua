@@ -62,6 +62,7 @@ function M.setup_commands(view_buffers)
   -- Setup key mappings for the todo buffer.
   local todo_opts = { noremap = true, silent = true, buffer = view_buffers.todo_buf }
   vim.keymap.set('n', config.keymap.toggle_todo, tasks.toggle_todo, todo_opts)
+  vim.keymap.set('v', config.keymap.toggle_todo, ':<C-u>lua require("workday.tasks").toggle_todo_visual()<CR>', todo_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, todo_opts)
   vim.keymap.set('n', config.keymap.move_to_backlog_top, function() tasks.move_to_backlog_top(view_buffers.backlog_buf) end, todo_opts)
   vim.keymap.set('n', config.keymap.archive_completed_tasks, tasks.archive_completed_tasks, todo_opts)

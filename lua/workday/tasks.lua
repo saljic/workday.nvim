@@ -24,17 +24,42 @@ local function cleanup_empty_lines(buf)
 end
 
 -- Toggle the checkbox state of a task in the current buffer.
+-- Single line version (normal mode).
 function M.toggle_todo()
-  local row = vim.api.nvim_win_get_cursor(0)[1] - 1
   local buf = vim.api.nvim_get_current_buf()
-
+  local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+  
   if row < 1 then return end  -- skip header
-
+  
   local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
   if not line then return end
-
+  
   local toggled = line_utils.toggle_completed(line)
   vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { toggled })
+  highlights.apply_buffer_highlights(buf, "todo")
+end
+
+-- Toggle multiple todos in visual selection.
+function M.toggle_todo_visual()
+  local buf = vim.api.nvim_get_current_buf()
+  
+  -- Get visual selection range
+  local start_row = vim.fn.line("'<") - 1  -- Convert to 0-indexed
+  local end_row = vim.fn.line("'>") - 1    -- Convert to 0-indexed
+  
+  -- Ensure we don't process the header (line 0)
+  start_row = math.max(1, start_row)
+  end_row = math.max(1, end_row)
+  
+  -- Process each line in the selection
+  for row = start_row, end_row do
+    local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
+    if line and (line:match("^%s*-%s*%[%s%]") or line:match("^%s*-%s*%[x%]") or line:match("^%s*-%s*%[X%]")) then
+      local toggled = line_utils.toggle_completed(line)
+      vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { toggled })
+    end
+  end
+  
   highlights.apply_buffer_highlights(buf, "todo")
 end
 

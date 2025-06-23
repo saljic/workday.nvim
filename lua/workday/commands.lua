@@ -59,18 +59,27 @@ function M.setup_commands(view_buffers)
   vim.keymap.set('n', config.keymap.move_to_backlog_top, function() tasks.move_to_backlog_top(view_buffers.backlog_buf) end, todo_opts)
   vim.keymap.set('v', config.keymap.move_to_backlog_top, ':<C-u>lua require("workday.tasks").move_to_backlog_top_visual()<CR>', todo_opts)
   vim.keymap.set('n', config.keymap.archive_completed_tasks, tasks.archive_completed_tasks, todo_opts)
+  vim.keymap.set('n', config.keymap.undo, tasks.undo, todo_opts)
+  vim.keymap.set('n', config.keymap.redo, tasks.redo, todo_opts)
+  vim.keymap.set('n', config.keymap.show_history, tasks.show_history, todo_opts)
 
   -- Setup key mappings for the backlog buffer
   local backlog_opts = { noremap = true, silent = true, buffer = view_buffers.backlog_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.backlog_buf, view_buffers.todo_buf) end, backlog_opts)
   vim.keymap.set('v', config.keymap.move_to_todo_bottom, ':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(' .. view_buffers.backlog_buf .. ', ' .. view_buffers.todo_buf .. ')<CR>', backlog_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, backlog_opts)
+  vim.keymap.set('n', config.keymap.undo, tasks.undo, backlog_opts)
+  vim.keymap.set('n', config.keymap.redo, tasks.redo, backlog_opts)
+  vim.keymap.set('n', config.keymap.show_history, tasks.show_history, backlog_opts)
 
   -- Setup key mappings for the archive buffer
   local archive_opts = { noremap = true, silent = true, buffer = view_buffers.archive_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.archive_buf, view_buffers.todo_buf) end, archive_opts)
   vim.keymap.set('v', config.keymap.move_to_todo_bottom, ':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(' .. view_buffers.archive_buf .. ', ' .. view_buffers.todo_buf .. ')<CR>', archive_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, archive_opts)
+  vim.keymap.set('n', config.keymap.undo, tasks.undo, archive_opts)
+  vim.keymap.set('n', config.keymap.redo, tasks.redo, archive_opts)
+  vim.keymap.set('n', config.keymap.show_history, tasks.show_history, archive_opts)
 
   -- Setup autocmds for cursor movement prevention
   local header_prevent_buffers = {

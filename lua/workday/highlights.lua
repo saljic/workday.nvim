@@ -16,33 +16,47 @@ function M.setup_highlights()
 end
 
 function M.apply_buffer_highlights(buf, buffer_type)
+  -- Create or get namespace for workday highlights
+  local ns = vim.api.nvim_create_namespace("workday_highlights")
+  
   -- Clear existing highlights
-  vim.api.nvim_buf_clear_namespace(buf, -1, 0, -1)
+  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
 
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
   for i, line in ipairs(lines) do
-    local line_num = i - 1 -- 0-indexed for nvim_buf_add_highlight
+    local line_num = i - 1 -- 0-indexed for extmarks
+    local hl_group = nil
 
     -- Always highlight the header (first line) consistently across all buffers
     if i == 1 then
-      vim.api.nvim_buf_add_highlight(buf, -1, "WorkdayHeader", line_num, 0, -1)
+      hl_group = "WorkdayHeader"
     elseif buffer_type == "todo" then
       if line:match("^%s*-%s*%[x%]") then
         -- Completed todo
-        vim.api.nvim_buf_add_highlight(buf, -1, "WorkdayCompleted", line_num, 0, -1)
+        hl_group = "WorkdayCompleted"
       elseif line:match("^%s*-%s*%[%s%]") then
         -- Uncompleted todo
-        vim.api.nvim_buf_add_highlight(buf, -1, "WorkdayTodo", line_num, 0, -1)
+        hl_group = "WorkdayTodo"
       end
     elseif buffer_type == "backlog" then
       if line:match("^%s*-%s") then
         -- Backlog item
-        vim.api.nvim_buf_add_highlight(buf, -1, "WorkdayBacklog", line_num, 0, -1)
+        hl_group = "WorkdayBacklog"
       end
     elseif buffer_type == "archive" then
       -- Archive items (treat as completed)
-      vim.api.nvim_buf_add_highlight(buf, -1, "WorkdayCompleted", line_num, 0, -1)
+      hl_group = "WorkdayCompleted"
+    end
+
+    -- Apply highlight using extmarks if we have a highlight group
+    if hl_group then
+      vim.api.nvim_buf_set_extmark(buf, ns, line_num, 0, {
+        end_line = line_num,
+        end_col = #line,
+        hl_group = hl_group,
+        priority = 100
+      })
     end
   end
 end

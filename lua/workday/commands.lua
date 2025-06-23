@@ -6,6 +6,26 @@ local highlights = require("workday.highlights")
 
 local M = {}
 
+-- Remove empty lines from buffer (keeping the header)
+local function cleanup_empty_lines(buf)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local cleaned_lines = {}
+  
+  -- Always keep the header (first line)
+  if #lines > 0 then
+    table.insert(cleaned_lines, lines[1])
+  end
+  
+  -- Add non-empty lines
+  for i = 2, #lines do
+    if lines[i] and lines[i]:match("%S") then -- has non-whitespace content
+      table.insert(cleaned_lines, lines[i])
+    end
+  end
+  
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, cleaned_lines)
+end
+
 local process_lines = function(buffer)
   local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
   for i, line in ipairs(lines) do
@@ -14,7 +34,8 @@ local process_lines = function(buffer)
     end
   end
   vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
-  -- Reapply highlights after modifying buffer content
+  -- Clean up empty lines and reapply highlights
+  cleanup_empty_lines(buffer)
   highlights.apply_buffer_highlights(buffer, "todo")
 end
 
@@ -106,6 +127,8 @@ function M.setup_commands(view_buffers)
   vim.api.nvim_create_autocmd("InsertLeave", {
     buffer = view_buffers.archive_buf,
     callback = function()
+      cleanup_empty_lines(view_buffers.archive_buf)
+      highlights.apply_buffer_highlights(view_buffers.archive_buf, "archive")
       persistence.save_workday(view_buffers)
     end,
   })
@@ -113,6 +136,8 @@ function M.setup_commands(view_buffers)
   vim.api.nvim_create_autocmd("InsertLeave", {
     buffer = view_buffers.backlog_buf,
     callback = function()
+      cleanup_empty_lines(view_buffers.backlog_buf)
+      highlights.apply_buffer_highlights(view_buffers.backlog_buf, "backlog")
       persistence.save_workday(view_buffers)
     end,
   })

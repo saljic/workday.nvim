@@ -1,4 +1,5 @@
 local line_utils = require("workday.line_utils")
+local highlights = require("workday.highlights")
 
 local M = {}
 
@@ -14,6 +15,7 @@ function M.toggle_todo()
 
   local toggled = line_utils.toggle_completed(line)
   vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { toggled })
+  highlights.apply_buffer_highlights(buf, "todo")
 end
 
 -- Move a task from the todo list to the top of the backlog.
@@ -36,6 +38,8 @@ function M.move_to_backlog_top(backlog_buf)
     table.insert(backlog_lines, 2, stripped_line)
   end
   vim.api.nvim_buf_set_lines(backlog_buf, 0, -1, false, backlog_lines)
+  highlights.apply_buffer_highlights(cur_buf, "todo")
+  highlights.apply_buffer_highlights(backlog_buf, "backlog")
 end
 
 -- Move a task from the backlog to the bottom of the todo list.
@@ -57,6 +61,15 @@ function M.move_to_todo_bottom(from_buf, todo_buf)
   local prefixed_line = line_utils.add_prefix(line)
   local todo_line_count = vim.api.nvim_buf_line_count(todo_buf)
   vim.api.nvim_buf_set_lines(todo_buf, todo_line_count, todo_line_count, false, { prefixed_line })
+  
+  -- Determine buffer type for highlighting
+  local view_buffers = require("workday").view_buffers
+  local cur_buf_type = "backlog" -- default
+  if view_buffers and cur_buf == view_buffers.archive_buf then
+    cur_buf_type = "archive"
+  end
+  highlights.apply_buffer_highlights(cur_buf, cur_buf_type)
+  highlights.apply_buffer_highlights(todo_buf, "todo")
 end
 
 -- Archive tasks marked as completed in the todo list.
@@ -84,6 +97,8 @@ function M.archive_completed_tasks()
 
   if archived_count > 0 then
     vim.notify("Archived " .. archived_count .. " tasks.")
+    highlights.apply_buffer_highlights(todo_buf, "todo")
+    highlights.apply_buffer_highlights(archive_buf, "archive")
   else
     vim.notify("No completed tasks found to archive.")
   end

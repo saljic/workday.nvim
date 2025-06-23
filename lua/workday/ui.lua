@@ -1,4 +1,5 @@
 local config_mod = require("workday.config")
+local highlights = require("workday.highlights")
 local config = config_mod.config
 
 local M = {}
@@ -12,7 +13,7 @@ function M.create_scratch_buffer(name, width)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = 'nofile'
   vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].filetype = name or 'workday'
+  vim.bo[buf].filetype = 'workday'
   vim.bo[buf].swapfile = false
   vim.bo[buf].autoindent = false
   vim.bo[buf].smartindent = false
@@ -92,7 +93,7 @@ function M.setup_layout()
 
   vim.api.nvim_set_current_win(main_win)
 
-  return {
+  local view_buffers = {
     todo_win = main_win,
     backlog_win = right_win,
     archive_win = bottom_right_win,
@@ -100,6 +101,14 @@ function M.setup_layout()
     backlog_buf = backlog_buf,
     archive_buf = archive_buf,
   }
+
+  -- Setup highlights and apply them to buffers
+  highlights.setup_highlights()
+  highlights.apply_buffer_highlights(todo_buf, "todo")
+  highlights.apply_buffer_highlights(backlog_buf, "backlog")
+  highlights.apply_buffer_highlights(archive_buf, "archive")
+
+  return view_buffers
 end
 
 return M

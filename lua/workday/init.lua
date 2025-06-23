@@ -1,6 +1,7 @@
 local config_mod = require("workday.config")
 local ui = require("workday.ui")
 local commands_mod = require("workday.commands")
+local highlights = require("workday.highlights")
 
 local M = {}
 
@@ -8,6 +9,17 @@ M.config = config_mod.config
 
 function M.setup(opts)
   config_mod.setup(opts)
+  
+  -- Setup autocmd to refresh highlights when colorscheme changes
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    pattern = "*",
+    callback = function()
+      if M.view_buffers then
+        highlights.refresh_all_highlights(M.view_buffers)
+      end
+    end,
+    desc = "Refresh workday highlights on colorscheme change"
+  })
 end
 
 function M.open_workday_view()

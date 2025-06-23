@@ -2,6 +2,7 @@ local config = require("workday.config").config
 local tasks = require("workday.tasks")
 local line_utils = require("workday.line_utils")
 local persistence = require("workday.persistence")
+local highlights = require("workday.highlights")
 
 local M = {}
 
@@ -13,6 +14,8 @@ local process_lines = function(buffer)
     end
   end
   vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
+  -- Reapply highlights after modifying buffer content
+  highlights.apply_buffer_highlights(buffer, "todo")
 end
 
 local quit = function(view_buffers)

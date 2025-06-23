@@ -108,6 +108,19 @@ function M.setup_layout()
   highlights.apply_buffer_highlights(backlog_buf, "backlog")
   highlights.apply_buffer_highlights(archive_buf, "archive")
 
+  -- Position cursor on the first content line (line 2) in each buffer
+  vim.api.nvim_set_current_win(main_win)
+  vim.api.nvim_win_set_cursor(main_win, {2, 0})
+  
+  vim.api.nvim_set_current_win(right_win)
+  vim.api.nvim_win_set_cursor(right_win, {2, 0})
+  
+  vim.api.nvim_set_current_win(bottom_right_win)
+  vim.api.nvim_win_set_cursor(bottom_right_win, {2, 0})
+  
+  -- Return focus to the main (todo) window
+  vim.api.nvim_set_current_win(main_win)
+
   return view_buffers
 end
 

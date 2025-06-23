@@ -1,8 +1,8 @@
 -- Refactored main init module using new abstractions
 local config_mod = require("workday.config")
-local ui = require("workday.ui")
-local commands_mod = require("workday.commands")
-local highlights = require("workday.highlights")
+local ui = require("workday.ui_refactored")
+local commands_mod = require("workday.commands_refactored")
+local highlights = require("workday.highlights_refactored")
 
 local M = {}
 
@@ -35,7 +35,7 @@ function M.open_workday_view()
   commands_mod.setup_commands(view_buffers)
 end
 
--- Expose internal modules for debugging/testing
+-- Expose for testing
 M._ui = ui
 M._commands = commands_mod
 M._highlights = highlights
@@ -44,6 +44,10 @@ M._highlights = highlights
 vim.keymap.set('n', config_mod.config.keymap.start, function() M.open_workday_view() end, { noremap = true, silent = true })
 
 vim.api.nvim_create_user_command("Workday", function()
+  M.open_workday_view()
+end, { nargs = 0 })
+
+vim.api.nvim_create_user_command("WorkdayRefactored", function()
   M.open_workday_view()
 end, { nargs = 0 })
 

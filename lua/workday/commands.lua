@@ -1,61 +1,33 @@
-local config = require("workday.config").config
+-- Refactored commands module using new abstractions
+local constants = require("workday.core.constants")
+local utils = require("workday.core.utils")
+local BufferManager = require("workday.core.buffer_manager")
+local TaskOperations = require("workday.core.task_operations")
 local tasks = require("workday.tasks")
-local line_utils = require("workday.line_utils")
 local persistence = require("workday.persistence")
-local highlights = require("workday.highlights")
+local config = require("workday.config").config
 
 local M = {}
 
--- Remove empty lines from buffer (keeping the header)
-local function cleanup_empty_lines(buf)
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local cleaned_lines = {}
-  
-  -- Always keep the header (first line)
-  if #lines > 0 then
-    table.insert(cleaned_lines, lines[1])
+-- Initialize buffer manager for autocmds
+local buffer_manager = nil
+
+-- Process lines to add todo prefixes
+local function process_lines(buffer_type)
+  if not buffer_manager or not buffer_manager:is_valid_state() then
+    return
   end
   
-  -- Add non-empty lines
-  local has_content = false
-  for i = 2, #lines do
-    if lines[i] and lines[i]:match("%S") then -- has non-whitespace content
-      table.insert(cleaned_lines, lines[i])
-      has_content = true
-    end
-  end
+  local lines = buffer_manager:get_lines(buffer_type)
+  local processed_lines = TaskOperations.process_todo_lines(lines)
   
-  -- If no content, add empty line for cursor positioning to prevent visual flicker
-  if not has_content then
-    table.insert(cleaned_lines, "")
-  end
-  
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, cleaned_lines)
+  buffer_manager:set_lines(buffer_type, 0, -1, processed_lines)
+  buffer_manager:cleanup_empty_lines(buffer_type, true)
+  buffer_manager:apply_highlights(buffer_type)
 end
 
--- Ensure buffer has content for cursor positioning (adds empty line if needed)
-local function ensure_cursor_line(buf)
-  local line_count = vim.api.nvim_buf_line_count(buf)
-  if line_count == 1 then
-    -- Only header exists, add empty line for cursor positioning
-    vim.api.nvim_buf_set_lines(buf, 1, 1, false, {""})
-  end
-end
-
-local process_lines = function(buffer)
-  local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
-  for i, line in ipairs(lines) do
-    if i > 1 and line ~= "" and not line:match("^%- %[[ xX]?%] ") then
-      lines[i] = "- [ ] " .. line
-    end
-  end
-  vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
-  -- Clean up empty lines and reapply highlights
-  cleanup_empty_lines(buffer)
-  highlights.apply_buffer_highlights(buffer, "todo")
-end
-
-local quit = function(view_buffers)
+-- Quit workday view
+local function quit(view_buffers)
   if not view_buffers then
     vim.notify("Workday view is not open", vim.log.levels.ERROR)
     return
@@ -63,43 +35,50 @@ local quit = function(view_buffers)
 
   persistence.save_workday(view_buffers)
 
-  if vim.api.nvim_buf_is_valid(view_buffers.todo_buf) then
-    vim.api.nvim_buf_delete(view_buffers.todo_buf, { force = true })
-  end
-  if vim.api.nvim_buf_is_valid(view_buffers.backlog_buf) then
-    vim.api.nvim_buf_delete(view_buffers.backlog_buf, { force = true })
-  end
-  if vim.api.nvim_buf_is_valid(view_buffers.archive_buf) then
-    vim.api.nvim_buf_delete(view_buffers.archive_buf, { force = true })
+  -- Clean up buffers
+  for _, buffer_type in pairs(constants.BUFFER_TYPES) do
+    local buf = view_buffers[buffer_type .. "_buf"]
+    if utils.is_valid_buffer(buf) then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
   end
 end
 
 function M.setup_commands(view_buffers)
-  -- Setup key mappings for the todo buffer.
+  -- Initialize buffer manager for this session
+  buffer_manager = BufferManager:new(view_buffers)
+  
+  -- Initialize tasks module
+  tasks.init(view_buffers)
+  
+  -- Setup key mappings for the todo buffer
   local todo_opts = { noremap = true, silent = true, buffer = view_buffers.todo_buf }
   vim.keymap.set('n', config.keymap.toggle_todo, tasks.toggle_todo, todo_opts)
   vim.keymap.set('v', config.keymap.toggle_todo, ':<C-u>lua require("workday.tasks").toggle_todo_visual()<CR>', todo_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, todo_opts)
   vim.keymap.set('n', config.keymap.move_to_backlog_top, function() tasks.move_to_backlog_top(view_buffers.backlog_buf) end, todo_opts)
-  vim.keymap.set('v', config.keymap.move_to_backlog_top, string.format(':<C-u>lua require("workday.tasks").move_to_backlog_top_visual(%d)<CR>', view_buffers.backlog_buf), todo_opts)
+  vim.keymap.set('v', config.keymap.move_to_backlog_top, ':<C-u>lua require("workday.tasks").move_to_backlog_top_visual()<CR>', todo_opts)
   vim.keymap.set('n', config.keymap.archive_completed_tasks, tasks.archive_completed_tasks, todo_opts)
 
+  -- Setup key mappings for the backlog buffer
   local backlog_opts = { noremap = true, silent = true, buffer = view_buffers.backlog_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.backlog_buf, view_buffers.todo_buf) end, backlog_opts)
-  vim.keymap.set('v', config.keymap.move_to_todo_bottom, string.format(':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(%d, %d)<CR>', view_buffers.backlog_buf, view_buffers.todo_buf), backlog_opts)
+  vim.keymap.set('v', config.keymap.move_to_todo_bottom, ':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(' .. view_buffers.backlog_buf .. ', ' .. view_buffers.todo_buf .. ')<CR>', backlog_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, backlog_opts)
 
+  -- Setup key mappings for the archive buffer
   local archive_opts = { noremap = true, silent = true, buffer = view_buffers.archive_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.archive_buf, view_buffers.todo_buf) end, archive_opts)
-  vim.keymap.set('v', config.keymap.move_to_todo_bottom, string.format(':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(%d, %d)<CR>', view_buffers.archive_buf, view_buffers.todo_buf), archive_opts)
+  vim.keymap.set('v', config.keymap.move_to_todo_bottom, ':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(' .. view_buffers.archive_buf .. ', ' .. view_buffers.todo_buf .. ')<CR>', archive_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, archive_opts)
 
-  -- Prevent moving the cursor into header lines.
+  -- Setup autocmds for cursor movement prevention
   local header_prevent_buffers = {
     view_buffers.todo_buf,
     view_buffers.backlog_buf,
     view_buffers.archive_buf
   }
+  
   for _, buf in ipairs(header_prevent_buffers) do
     vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
       buffer = buf,
@@ -118,28 +97,32 @@ function M.setup_commands(view_buffers)
     })
   end
 
-  -- Auto-remove checkbox prefix when entering insert mode.
+  -- Auto-remove checkbox prefix when entering insert mode (todo buffer only)
   vim.api.nvim_create_autocmd("InsertEnter", {
     buffer = view_buffers.todo_buf,
     callback = function()
       local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-      if row < 1 then
-        return
-      end
-      local line = vim.api.nvim_buf_get_lines(view_buffers.todo_buf, row, row + 1, false)[1]
-      if line then
-        local stripped_line = line_utils.strip_prefix(line)
-        if stripped_line ~= line then
-          vim.api.nvim_buf_set_lines(view_buffers.todo_buf, row, row + 1, false, { stripped_line })
+      if row < 1 then return end
+      
+      local lines = buffer_manager:get_lines(constants.BUFFER_TYPES.TODO)
+      if row < #lines then
+        local line = lines[row + 1]
+        if line then
+          local stripped_line = utils.strip_todo_prefix(line)
+          if stripped_line ~= line then
+            lines[row + 1] = stripped_line
+            buffer_manager:set_lines(constants.BUFFER_TYPES.TODO, 0, -1, lines)
+          end
         end
       end
     end,
   })
 
+  -- Setup InsertLeave autocmds
   vim.api.nvim_create_autocmd("InsertLeave", {
     buffer = view_buffers.todo_buf,
     callback = function()
-      process_lines(view_buffers.todo_buf)
+      process_lines(constants.BUFFER_TYPES.TODO)
       persistence.save_workday(view_buffers)
     end,
   })
@@ -147,8 +130,8 @@ function M.setup_commands(view_buffers)
   vim.api.nvim_create_autocmd("InsertLeave", {
     buffer = view_buffers.archive_buf,
     callback = function()
-      cleanup_empty_lines(view_buffers.archive_buf)
-      highlights.apply_buffer_highlights(view_buffers.archive_buf, "archive")
+      buffer_manager:cleanup_empty_lines(constants.BUFFER_TYPES.ARCHIVE, true)
+      buffer_manager:apply_highlights(constants.BUFFER_TYPES.ARCHIVE)
       persistence.save_workday(view_buffers)
     end,
   })
@@ -156,16 +139,17 @@ function M.setup_commands(view_buffers)
   vim.api.nvim_create_autocmd("InsertLeave", {
     buffer = view_buffers.backlog_buf,
     callback = function()
-      cleanup_empty_lines(view_buffers.backlog_buf)
-      highlights.apply_buffer_highlights(view_buffers.backlog_buf, "backlog")
+      buffer_manager:cleanup_empty_lines(constants.BUFFER_TYPES.BACKLOG, true)
+      buffer_manager:apply_highlights(constants.BUFFER_TYPES.BACKLOG)
       persistence.save_workday(view_buffers)
     end,
   })
 
+  -- Setup TextChanged autocmds
   vim.api.nvim_create_autocmd("TextChanged", {
     buffer = view_buffers.todo_buf,
     callback = function()
-      process_lines(view_buffers.todo_buf)
+      process_lines(constants.BUFFER_TYPES.TODO)
       persistence.save_workday(view_buffers)
     end,
   })

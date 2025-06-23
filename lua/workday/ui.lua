@@ -1,13 +1,11 @@
+-- Refactored UI module using new abstractions
+local constants = require("workday.core.constants")
+local utils = require("workday.core.utils")
+local BufferManager = require("workday.core.buffer_manager")
 local config_mod = require("workday.config")
-local highlights = require("workday.highlights")
 local config = config_mod.config
 
 local M = {}
-
-local function center_text(text, width)
-  local padding = math.max(0, math.floor((width - #text) / 2))
-  return string.rep(" ", padding) .. text
-end
 
 function M.create_scratch_buffer(name, width)
   local buf = vim.api.nvim_create_buf(false, true)
@@ -24,7 +22,7 @@ function M.create_scratch_buffer(name, width)
   vim.api.nvim_buf_set_name(buf, "workday:" .. name)
 
   width = width or 40
-  local header = center_text(string.upper(name), width)
+  local header = utils.center_text(string.upper(name), width)
   vim.api.nvim_buf_set_lines(buf, 0, 0, false, { header })
 
   return buf
@@ -37,7 +35,7 @@ function M.load_or_create_buffer(buf, file_path, name, width)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   else
     width = width or 40
-    local header = center_text(string.upper(name), width)
+    local header = utils.center_text(string.upper(name), width)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { header })
   end
 end
@@ -102,11 +100,14 @@ function M.setup_layout()
     archive_buf = archive_buf,
   }
 
-  -- Setup highlights and apply them to buffers
-  highlights.setup_highlights()
-  highlights.apply_buffer_highlights(todo_buf, "todo")
-  highlights.apply_buffer_highlights(backlog_buf, "backlog")
-  highlights.apply_buffer_highlights(archive_buf, "archive")
+  -- Initialize buffer manager and setup highlights
+  local buffer_manager = BufferManager:new(view_buffers)
+  buffer_manager.setup_highlight_groups()
+  
+  -- Apply highlights to all buffers
+  for _, buffer_type in pairs(constants.BUFFER_TYPES) do
+    buffer_manager:apply_highlights(buffer_type)
+  end
 
   -- Position cursor on the first content line (line 2) in each buffer
   -- Ensure each buffer has at least 2 lines before setting cursor

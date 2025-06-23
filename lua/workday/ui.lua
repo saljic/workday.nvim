@@ -109,14 +109,25 @@ function M.setup_layout()
   highlights.apply_buffer_highlights(archive_buf, "archive")
 
   -- Position cursor on the first content line (line 2) in each buffer
-  vim.api.nvim_set_current_win(main_win)
-  vim.api.nvim_win_set_cursor(main_win, {2, 0})
+  -- Ensure each buffer has at least 2 lines before setting cursor
+  local buffers_and_wins = {
+    {todo_buf, main_win},
+    {backlog_buf, right_win},
+    {archive_buf, bottom_right_win}
+  }
   
-  vim.api.nvim_set_current_win(right_win)
-  vim.api.nvim_win_set_cursor(right_win, {2, 0})
-  
-  vim.api.nvim_set_current_win(bottom_right_win)
-  vim.api.nvim_win_set_cursor(bottom_right_win, {2, 0})
+  for _, buf_win in ipairs(buffers_and_wins) do
+    local buf, win = buf_win[1], buf_win[2]
+    local line_count = vim.api.nvim_buf_line_count(buf)
+    
+    if line_count == 1 then
+      -- Only header exists, add empty line for cursor positioning
+      vim.api.nvim_buf_set_lines(buf, 1, 1, false, {""})
+    end
+    
+    vim.api.nvim_set_current_win(win)
+    vim.api.nvim_win_set_cursor(win, {2, 0})
+  end
   
   -- Return focus to the main (todo) window
   vim.api.nvim_set_current_win(main_win)

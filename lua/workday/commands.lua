@@ -17,13 +17,29 @@ local function cleanup_empty_lines(buf)
   end
   
   -- Add non-empty lines
+  local has_content = false
   for i = 2, #lines do
     if lines[i] and lines[i]:match("%S") then -- has non-whitespace content
       table.insert(cleaned_lines, lines[i])
+      has_content = true
     end
   end
   
+  -- If no content, add empty line for cursor positioning to prevent visual flicker
+  if not has_content then
+    table.insert(cleaned_lines, "")
+  end
+  
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, cleaned_lines)
+end
+
+-- Ensure buffer has content for cursor positioning (adds empty line if needed)
+local function ensure_cursor_line(buf)
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  if line_count == 1 then
+    -- Only header exists, add empty line for cursor positioning
+    vim.api.nvim_buf_set_lines(buf, 1, 1, false, {""})
+  end
 end
 
 local process_lines = function(buffer)
@@ -65,14 +81,17 @@ function M.setup_commands(view_buffers)
   vim.keymap.set('v', config.keymap.toggle_todo, ':<C-u>lua require("workday.tasks").toggle_todo_visual()<CR>', todo_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, todo_opts)
   vim.keymap.set('n', config.keymap.move_to_backlog_top, function() tasks.move_to_backlog_top(view_buffers.backlog_buf) end, todo_opts)
+  vim.keymap.set('v', config.keymap.move_to_backlog_top, string.format(':<C-u>lua require("workday.tasks").move_to_backlog_top_visual(%d)<CR>', view_buffers.backlog_buf), todo_opts)
   vim.keymap.set('n', config.keymap.archive_completed_tasks, tasks.archive_completed_tasks, todo_opts)
 
   local backlog_opts = { noremap = true, silent = true, buffer = view_buffers.backlog_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.backlog_buf, view_buffers.todo_buf) end, backlog_opts)
+  vim.keymap.set('v', config.keymap.move_to_todo_bottom, string.format(':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(%d, %d)<CR>', view_buffers.backlog_buf, view_buffers.todo_buf), backlog_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, backlog_opts)
 
   local archive_opts = { noremap = true, silent = true, buffer = view_buffers.archive_buf }
   vim.keymap.set('n', config.keymap.move_to_todo_bottom, function() tasks.move_to_todo_bottom(view_buffers.archive_buf, view_buffers.todo_buf) end, archive_opts)
+  vim.keymap.set('v', config.keymap.move_to_todo_bottom, string.format(':<C-u>lua require("workday.tasks").move_to_todo_bottom_visual(%d, %d)<CR>', view_buffers.archive_buf, view_buffers.todo_buf), archive_opts)
   vim.keymap.set('n', config.keymap.quit, function() quit(view_buffers) end, archive_opts)
 
   -- Prevent moving the cursor into header lines.

@@ -6,8 +6,8 @@ local config = {
     move_to_todo_bottom = "<leader>td", -- Move backlog/archive to todo bottom
     quit = "q", -- Quit workday view
     start = "<leader>ow", -- Open workday view
-    undo = "u", -- Undo last action
-    redo = "U", -- Redo last undone action
+    undo = "<leader>tu", -- Undo last action
+    redo = "<leader>tr", -- Redo last undone action
     show_history = "<leader>th", -- Show command history
   },
   persistence = {

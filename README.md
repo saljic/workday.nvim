@@ -5,6 +5,7 @@ A powerful task management plugin for Neovim that transforms your editor into a 
 ## 💡 Why workday.nvim?
 
 During work, I constantly run into situations where:
+
 - Someone asks me to investigate something
 - I discover bugs that need fixing later
 - I want to explore interesting code patterns
@@ -26,7 +27,7 @@ The problem? I didn't want to pollute the sprint board with personal tasks that 
 
 ## 📸 Demo
 
-TODO: Add gif demo
+[![asciicast](https://asciinema.org/a/hBBEIsVS007cfX1u8MdlENpQ7.svg)](https://asciinema.org/a/hBBEIsVS007cfX1u8MdlENpQ7)
 
 ## 📦 Installation
 
@@ -215,4 +216,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 ⭐ If you like this plugin, please consider giving it a star on GitHub!
-

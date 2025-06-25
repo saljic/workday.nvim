@@ -19,7 +19,13 @@ local function process_lines(buffer_type)
   end
   
   local lines = buffer_manager:get_lines(buffer_type)
-  local processed_lines = TaskOperations.process_todo_lines(lines)
+  local processed_lines
+  
+  if buffer_type == constants.BUFFER_TYPES.ARCHIVE then
+    processed_lines = TaskOperations.process_archive_lines(lines)
+  else
+    processed_lines = TaskOperations.process_todo_lines(lines)
+  end
   
   buffer_manager:set_lines(buffer_type, 0, -1, processed_lines)
   buffer_manager:cleanup_empty_lines(buffer_type, true)
@@ -119,8 +125,7 @@ function M.setup_commands(view_buffers)
   vim.api.nvim_create_autocmd("InsertLeave", {
     buffer = view_buffers.archive_buf,
     callback = function()
-      buffer_manager:cleanup_empty_lines(constants.BUFFER_TYPES.ARCHIVE, true)
-      buffer_manager:apply_highlights(constants.BUFFER_TYPES.ARCHIVE)
+      process_lines(constants.BUFFER_TYPES.ARCHIVE)
       persistence.save_workday(view_buffers)
     end,
   })
@@ -146,6 +151,7 @@ function M.setup_commands(view_buffers)
   vim.api.nvim_create_autocmd("TextChanged", {
     buffer = view_buffers.archive_buf,
     callback = function()
+      process_lines(constants.BUFFER_TYPES.ARCHIVE)
       persistence.save_workday(view_buffers)
     end,
   })

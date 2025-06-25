@@ -33,6 +33,26 @@ function M.process_todo_lines(lines)
   return processed_lines
 end
 
+-- Process lines to ensure they have completed todo prefixes for archive
+function M.process_archive_lines(lines)
+  local processed_lines = {}
+  
+  for i, line in ipairs(lines) do
+    if i == 1 then
+      -- Keep header unchanged
+      table.insert(processed_lines, line)
+    elseif line ~= "" and not utils.is_todo_line(line) then
+      -- Add completed todo prefix to non-empty lines that don't have it
+      table.insert(processed_lines, "- [x] " .. line)
+    else
+      -- Keep existing lines unchanged
+      table.insert(processed_lines, line)
+    end
+  end
+  
+  return processed_lines
+end
+
 -- Extract tasks from lines for movement
 function M.extract_tasks_from_lines(lines, start_row, end_row)
   local tasks = {}

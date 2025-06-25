@@ -54,10 +54,25 @@ function ArchiveCompletedCommand:execute()
     return -- Nothing to archive
   end
   
-  -- Add completed tasks to archive (preserve checkbox prefix)
-  for _, task in ipairs(completed_tasks) do
-    table.insert(archive_lines, task)
+  -- Add completed tasks to top of archive (preserve checkbox prefix)
+  local new_archive_lines = {}
+  
+  -- Keep header
+  if #archive_lines > 0 then
+    table.insert(new_archive_lines, archive_lines[1])
   end
+  
+  -- Add completed tasks at top (after header)
+  for _, task in ipairs(completed_tasks) do
+    table.insert(new_archive_lines, task)
+  end
+  
+  -- Add existing archive content after new tasks
+  for i = 2, #archive_lines do
+    table.insert(new_archive_lines, archive_lines[i])
+  end
+  
+  archive_lines = new_archive_lines
   
   -- Update buffers
   buffer_manager:set_lines(constants.BUFFER_TYPES.TODO, 0, -1, remaining_lines)

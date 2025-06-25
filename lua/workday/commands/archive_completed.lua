@@ -44,8 +44,7 @@ function ArchiveCompletedCommand:execute()
       table.insert(remaining_lines, line)
     elseif utils.is_completed_todo(line) then
       table.insert(completed_tasks, line)
-      local stripped_line = utils.strip_todo_prefix(line)
-      table.insert(self.data.archived_tasks, stripped_line)
+      table.insert(self.data.archived_tasks, line)
     else
       table.insert(remaining_lines, line)
     end
@@ -55,10 +54,9 @@ function ArchiveCompletedCommand:execute()
     return -- Nothing to archive
   end
   
-  -- Add completed tasks to archive (strip checkbox prefix)
+  -- Add completed tasks to archive (preserve checkbox prefix)
   for _, task in ipairs(completed_tasks) do
-    local stripped_task = utils.strip_todo_prefix(task)
-    table.insert(archive_lines, stripped_task)
+    table.insert(archive_lines, task)
   end
   
   -- Update buffers

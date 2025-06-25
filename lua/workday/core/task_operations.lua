@@ -66,11 +66,15 @@ function M.prepare_tasks_for_destination(tasks, destination_type)
       if not utils.is_todo_line(prepared_line) then
         prepared_line = utils.add_todo_prefix(prepared_line)
       end
-    elseif destination_type == constants.BUFFER_TYPES.BACKLOG or 
-           destination_type == constants.BUFFER_TYPES.ARCHIVE then
-      -- Strip todo prefix if moving to backlog or archive
+    elseif destination_type == constants.BUFFER_TYPES.BACKLOG then
+      -- Strip todo prefix if moving to backlog
       if utils.is_todo_line(prepared_line) then
         prepared_line = utils.strip_todo_prefix(prepared_line)
+      end
+    elseif destination_type == constants.BUFFER_TYPES.ARCHIVE then
+      -- Keep todo prefix when moving to archive (preserve completion state)
+      if not utils.is_todo_line(prepared_line) then
+        prepared_line = utils.add_todo_prefix(prepared_line)
       end
     end
     

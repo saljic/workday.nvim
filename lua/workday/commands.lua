@@ -148,6 +148,48 @@ function M.setup_commands(view_buffers)
     end,
   })
   
+  -- Setup VimResized autocmd to re-center headers when terminal is resized
+  vim.api.nvim_create_autocmd("VimResized", {
+    callback = function()
+      -- Check if workday buffers are still valid
+      if not (utils.is_valid_buffer(view_buffers.todo_buf) and 
+              utils.is_valid_buffer(view_buffers.backlog_buf) and 
+              utils.is_valid_buffer(view_buffers.archive_buf)) then
+        return
+      end
+      
+      -- Update headers with new window widths
+      local buffers_info = {
+        {view_buffers.todo_buf, view_buffers.todo_win, "TODO"},
+        {view_buffers.backlog_buf, view_buffers.backlog_win, "BACKLOG"},
+        {view_buffers.archive_buf, view_buffers.archive_win, "ARCHIVE"}
+      }
+      
+      for _, info in ipairs(buffers_info) do
+        local buf, win, name = info[1], info[2], info[3]
+        if utils.is_valid_buffer(buf) and utils.is_valid_window(win) then
+          local width = vim.api.nvim_win_get_width(win)
+          local new_header = utils.center_text(name, width)
+          vim.api.nvim_buf_set_lines(buf, 0, 1, false, {new_header})
+          
+          -- Reapply highlights after updating header
+          local buffer_type = nil
+          if buf == view_buffers.todo_buf then
+            buffer_type = constants.BUFFER_TYPES.TODO
+          elseif buf == view_buffers.backlog_buf then
+            buffer_type = constants.BUFFER_TYPES.BACKLOG
+          elseif buf == view_buffers.archive_buf then
+            buffer_type = constants.BUFFER_TYPES.ARCHIVE
+          end
+          
+          if buffer_type and buffer_manager then
+            buffer_manager:apply_highlights(buffer_type)
+          end
+        end
+      end
+    end,
+  })
+  
   vim.api.nvim_create_autocmd("TextChanged", {
     buffer = view_buffers.archive_buf,
     callback = function()

@@ -106,26 +106,6 @@ function M.setup_commands(view_buffers)
     })
   end
 
-  -- Auto-remove checkbox prefix when entering insert mode (todo buffer only)
-  vim.api.nvim_create_autocmd("InsertEnter", {
-    buffer = view_buffers.todo_buf,
-    callback = function()
-      local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-      if row < 1 then return end
-      
-      local lines = buffer_manager:get_lines(constants.BUFFER_TYPES.TODO)
-      if row < #lines then
-        local line = lines[row + 1]
-        if line then
-          local stripped_line = utils.strip_todo_prefix(line)
-          if stripped_line ~= line then
-            lines[row + 1] = stripped_line
-            buffer_manager:set_lines(constants.BUFFER_TYPES.TODO, 0, -1, lines)
-          end
-        end
-      end
-    end,
-  })
 
   -- Setup InsertLeave autocmds
   vim.api.nvim_create_autocmd("InsertLeave", {

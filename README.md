@@ -35,7 +35,7 @@ The problem? I didn't want to pollute the sprint board with personal tasks that 
 
 ```lua
 {
-  "your-username/workday.nvim",
+  "saljic/workday.nvim",
   config = function()
     require("workday").setup({
       -- Optional configuration
@@ -48,7 +48,7 @@ The problem? I didn't want to pollute the sprint board with personal tasks that 
 
 ```lua
 use {
-  "your-username/workday.nvim",
+  "saljic/workday.nvim",
   config = function()
     require("workday").setup()
   end
@@ -58,7 +58,7 @@ use {
 ### Using [vim-plug](https://github.com/junegunn/vim-plug)
 
 ```vim
-Plug 'your-username/workday.nvim'
+Plug 'saljic/workday.nvim'
 ```
 
 Then in your `init.lua`:
